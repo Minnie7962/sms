@@ -40,11 +40,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Auth::routes();
+Auth::routes(['reset' => false]);
 
 Route::middleware(['auth'])->group(function () {
 
     Route::prefix('school')->name('school.')->group(function () {
+        // School-related routes
         Route::post('session/create', [SchoolSessionController::class, 'store'])->name('session.store');
         Route::post('session/browse', [SchoolSessionController::class, 'browse'])->name('session.browse');
 
@@ -75,105 +76,125 @@ Route::middleware(['auth'])->group(function () {
         Route::post('student/update', [UserController::class, 'updateStudent'])->name('student.update');
     });
 
+    Route::get('/home', [HomeController::class, 'index'])->name('dashboard');
 
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
+    // Attendance routes
+    Route::group(['prefix' => 'attendances'], function () {
+        Route::get('/', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/view', [AttendanceController::class, 'show'])->name('attendance.list.show');
+        Route::get('/take', [AttendanceController::class, 'create'])->name('attendance.create.show');
+        Route::post('/', [AttendanceController::class, 'store'])->name('attendances.store');
+    });
 
-    // Attendance
-    Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::get('/attendances/view', [AttendanceController::class, 'show'])->name('attendance.list.show');
-    Route::get('/attendances/take', [AttendanceController::class, 'create'])->name('attendance.create.show');
-    Route::post('/attendances', [AttendanceController::class, 'store'])->name('attendances.store');
+    // Classes and sections routes
+    Route::group(['prefix' => 'classes'], function () {
+        Route::get('/', [SchoolClassController::class, 'index']);
+        Route::get('/edit/{id}', [SchoolClassController::class, 'edit'])->name('class.edit');
+    });
+    Route::group(['prefix' => 'sections'], function () {
+        Route::get('/', [SectionController::class, 'getByClassId'])->name('get.sections.courses.by.classId');
+        Route::get('/edit/{id}', [SectionController::class, 'edit'])->name('section.edit');
+    });
 
-    // Classes and sections
-    Route::get('/classes', [SchoolClassController::class, 'index']);
-    Route::get('/class/edit/{id}', [SchoolClassController::class, 'edit'])->name('class.edit');
-    Route::get('/sections', [SectionController::class, 'getByClassId'])->name('get.sections.courses.by.classId');
-    Route::get('/section/edit/{id}', [SectionController::class, 'edit'])->name('section.edit');
+    // Teachers routes
+    Route::group(['prefix' => 'teachers'], function () {
+        Route::get('/add', function () {
+            return view('teachers.add');
+        })->name('teacher.create.show');
+        Route::get('/edit/{id}', [UserController::class, 'editTeacher'])->name('teacher.edit.show');
+        Route::get('/list', [UserController::class, 'getTeacherList'])->name('teacher.list.show');
+        Route::get('/profile/{id}', [UserController::class, 'showTeacherProfile'])->name('teacher.profile.show');
+    });
 
-    // Teachers
-    Route::get('/teachers/add', function () {
-        return view('teachers.add');
-    })->name('teacher.create.show');
-    Route::get('/teachers/edit/{id}', [UserController::class, 'editTeacher'])->name('teacher.edit.show');
-    Route::get('/teachers/view/list', [UserController::class, 'getTeacherList'])->name('teacher.list.show');
-    Route::get('/teachers/view/profile/{id}', [UserController::class, 'showTeacherProfile'])->name('teacher.profile.show');
+    // Students routes
+    Route::group(['prefix' => 'students'], function () {
+        Route::get('/add', [UserController::class, 'createStudent'])->name('student.create.show');
+        Route::get('/edit/{id}', [UserController::class, 'editStudent'])->name('student.edit.show');
+        Route::get('/list', [UserController::class, 'getStudentList'])->name('student.list.show');
+        Route::get('/profile/{id}', [UserController::class, 'showStudentProfile'])->name('student.profile.show');
+        Route::get('/attendance/{id}', [AttendanceController::class, 'showStudentAttendance'])->name('student.attendance.show');
+    });
 
-    //Students
-    Route::get('/students/add', [UserController::class, 'createStudent'])->name('student.create.show');
-    Route::get('/students/edit/{id}', [UserController::class, 'editStudent'])->name('student.edit.show');
-    Route::get('/students/view/list', [UserController::class, 'getStudentList'])->name('student.list.show');
-    Route::get('/students/view/profile/{id}', [UserController::class, 'showStudentProfile'])->name('student.profile.show');
-    Route::get('/students/view/attendance/{id}', [AttendanceController::class, 'showStudentAttendance'])->name('student.attendance.show');
+    // Marks routes
+    Route::group(['prefix' => 'marks'], function () {
+        Route::get('/create', [MarkController::class, 'create'])->name('course.mark.create');
+        Route::post('/store', [MarkController::class, 'store'])->name('course.mark.store');
+        Route::get('/results', [MarkController::class, 'index'])->name('course.mark.list.show');
+        Route::get('/view', [MarkController::class, 'showCourseMark'])->name('course.mark.show');
+        Route::get('/final/submit', [MarkController::class, 'showFinalMark'])->name('course.final.mark.submit.show');
+        Route::post('/final/submit', [MarkController::class, 'storeFinalMark'])->name('course.final.mark.submit.store');
+    });
 
-    // Marks
-    Route::get('/marks/create', [MarkController::class, 'create'])->name('course.mark.create');
-    Route::post('/marks/store', [MarkController::class, 'store'])->name('course.mark.store');
-    Route::get('/marks/results', [MarkController::class, 'index'])->name('course.mark.list.show');
-    // Route::get('/marks/view', function () {
-    //     return view('marks.view');
-    // });
-    Route::get('/marks/view', [MarkController::class, 'showCourseMark'])->name('course.mark.show');
-    Route::get('/marks/final/submit', [MarkController::class, 'showFinalMark'])->name('course.final.mark.submit.show');
-    Route::post('/marks/final/submit', [MarkController::class, 'storeFinalMark'])->name('course.final.mark.submit.store');
+    // Exams routes
+    Route::group(['prefix' => 'exams'], function () {
+        Route::get('/view', [ExamController::class, 'index'])->name('exam.list.show');
+        Route::post('/create', [ExamController::class,'store'])->name('exam.create');
+        Route::get('/create', [ExamController::class, 'create'])->name('exam.create.show');
+        Route::get('/add-rule', [ExamRuleController::class, 'create'])->name('exam.rule.create');
+        Route::post('/add-rule', [ExamRuleController::class, 'store'])->name('exam.rule.store');
+        Route::get('/edit-rule', [ExamRuleController::class, 'edit'])->name('exam.rule.edit');
+        Route::post('/edit-rule', [ExamRuleController::class, 'update'])->name('exam.rule.update');
+        Route::get('/view-rule', [ExamRuleController::class, 'index'])->name('exam.rule.show');
+        Route::get('/grade/create', [GradingSystemController::class, 'create'])->name('exam.grade.system.create');
+        Route::post('/grade/create', [GradingSystemController::class, 'store'])->name('exam.grade.system.store');
+        Route::get('/grade/view', [GradingSystemController::class, 'index'])->name('exam.grade.system.index');
+        Route::get('/grade/add-rule', [GradeRuleController::class, 'create'])->name('exam.grade.system.rule.create');
+        Route::post('/grade/add-rule', [GradeRuleController::class, 'store'])->name('exam.grade.system.rule.store');
+        Route::get('/grade/view-rules', [GradeRuleController::class, 'index'])->name('exam.grade.system.rule.show');
+        Route::post('/grade/delete-rule', [GradeRuleController::class, 'destroy'])->name('exam.grade.system.rule.delete');
+    });
 
-    // Exams
-    Route::get('/exams/view', [ExamController::class, 'index'])->name('exam.list.show');
-    // Route::get('/exams/view/history', function () {
-    //     return view('exams.history');
-    // });
-    Route::post('/exams/create', [ExamController::class, 'store'])->name('exam.create');
-    // Route::post('/exams/delete', [ExamController::class, 'delete'])->name('exam.delete');
-    Route::get('/exams/create', [ExamController::class, 'create'])->name('exam.create.show');
-    Route::get('/exams/add-rule', [ExamRuleController::class, 'create'])->name('exam.rule.create');
-    Route::post('/exams/add-rule', [ExamRuleController::class, 'store'])->name('exam.rule.store');
-    Route::get('/exams/edit-rule', [ExamRuleController::class, 'edit'])->name('exam.rule.edit');
-    Route::post('/exams/edit-rule', [ExamRuleController::class, 'update'])->name('exam.rule.update');
-    Route::get('/exams/view-rule', [ExamRuleController::class, 'index'])->name('exam.rule.show');
-    Route::get('/exams/grade/create', [GradingSystemController::class, 'create'])->name('exam.grade.system.create');
-    Route::post('/exams/grade/create', [GradingSystemController::class, 'store'])->name('exam.grade.system.store');
-    Route::get('/exams/grade/view', [GradingSystemController::class, 'index'])->name('exam.grade.system.index');
-    Route::get('/exams/grade/add-rule', [GradeRuleController::class, 'create'])->name('exam.grade.system.rule.create');
-    Route::post('/exams/grade/add-rule', [GradeRuleController::class, 'store'])->name('exam.grade.system.rule.store');
-    Route::get('/exams/grade/view-rules', [GradeRuleController::class, 'index'])->name('exam.grade.system.rule.show');
-    Route::post('/exams/grade/delete-rule', [GradeRuleController::class, 'destroy'])->name('exam.grade.system.rule.delete');
+    // Promotions routes
+    Route::group(['prefix' => 'promotions'], function () {
+        Route::get('/index', [PromotionController::class, 'index'])->name('promotions.index');
+        Route::get('/promote', [PromotionController::class, 'create'])->name('promotions.create');
+        Route::post('/promote', [PromotionController::class, 'store'])->name('promotions.store');
+    });
 
-    // Promotions
-    Route::get('/promotions/index', [PromotionController::class, 'index'])->name('promotions.index');
-    Route::get('/promotions/promote', [PromotionController::class, 'create'])->name('promotions.create');
-    Route::post('/promotions/promote', [PromotionController::class, 'store'])->name('promotions.store');
-
-    // Academic settings
+    // Academic settings route
     Route::get('/academics/settings', [AcademicSettingController::class, 'index']);
 
-    // Calendar events
-    Route::get('calendar-event', [EventController::class, 'index'])->name('events.show');
-    Route::post('calendar-crud-ajax', [EventController::class, 'calendarEvents'])->name('events.crud');
+    // Calendar events route
+    Route::group(['prefix' => 'calendar'], function () {
+        Route::get('event', [EventController::class, 'index'])->name('events.show');
+        Route::post('crud-ajax', [EventController::class, 'calendarEvents'])->name('events.crud');
+    });
 
-    // Routines
-    Route::get('/routine/create', [RoutineController::class, 'create'])->name('section.routine.create');
-    Route::get('/routine/view', [RoutineController::class, 'show'])->name('section.routine.show');
-    Route::post('/routine/store', [RoutineController::class, 'store'])->name('section.routine.store');
+    // Routines routes
+    Route::group(['prefix' => 'routine'], function () {
+        Route::get('/create', [RoutineController::class, 'create'])->name('section.routine.create');
+        Route::get('/view', [RoutineController::class, 'show'])->name('section.routine.show');
+        Route::post('/store', [RoutineController::class, 'store'])->name('section.routine.store');
+    });
 
-    // Syllabus
-    Route::get('/syllabus/create', [SyllabusController::class, 'create'])->name('class.syllabus.create');
-    Route::post('/syllabus/create', [SyllabusController::class, 'store'])->name('syllabus.store');
-    Route::get('/syllabus/index', [SyllabusController::class, 'index'])->name('course.syllabus.index');
+    // Syllabus routes
+    Route::group(['prefix' => 'syllabus'], function () {
+        Route::get('/create', [SyllabusController::class, 'create'])->name('class.syllabus.create');
+        Route::post('/create', [SyllabusController::class, 'store'])->name('syllabus.store');
+        Route::get('/index', [SyllabusController::class, 'index'])->name('course.syllabus.index');
+    });
 
-    // Notices
-    Route::get('/notice/create', [NoticeController::class, 'create'])->name('notice.create');
-    Route::post('/notice/create', [NoticeController::class, 'store'])->name('notice.store');
+    // Notices routes
+    Route::group(['prefix' => 'notice'], function () {
+        Route::get('/create', [NoticeController::class, 'create'])->name('notice.create');
+        Route::post('/create', [NoticeController::class, 'store'])->name('notice.store');
+    });
 
-    // Courses
-    Route::get('courses/teacher/index', [AssignedTeacherController::class, 'getTeacherCourses'])->name('course.teacher.list.show');
-    Route::get('courses/student/index/{student_id}', [CourseController::class, 'getStudentCourses'])->name('course.student.list.show');
-    Route::get('course/edit/{id}', [CourseController::class, 'edit'])->name('course.edit');
+    // Courses routes
+    Route::group(['prefix' => 'courses'], function () {
+        Route::get('teacher/index', [AssignedTeacherController::class, 'getTeacherCourses'])->name('course.teacher.list.show');
+        Route::get('student/index/{student_id}', [CourseController::class, 'getStudentCourses'])->name('course.student.list.show');
+        Route::get('edit/{id}', [CourseController::class, 'edit'])->name('course.edit');
+    });
 
-    // Assignment
-    Route::get('courses/assignments/index', [AssignmentController::class, 'getCourseAssignments'])->name('assignment.list.show');
-    Route::get('courses/assignments/create', [AssignmentController::class, 'create'])->name('assignment.create');
-    Route::post('courses/assignments/create', [AssignmentController::class, 'store'])->name('assignment.store');
+    // Assignment routes
+    Route::group(['prefix' => 'assignments'], function () {
+        Route::get('/index', [AssignmentController::class, 'getCourseAssignments'])->name('assignment.list.show');
+        Route::get('/create', [AssignmentController::class, 'create'])->name('assignment.create');
+        Route::post('/create', [AssignmentController::class, 'store'])->name('assignment.store');
+    });
 
-    // Update password
+    // Update password route
     Route::get('password/edit', [UpdatePasswordController::class, 'edit'])->name('password.edit');
-    Route::post('password/edit', [UpdatePasswordController::class, 'update'])->name('password.update');
+    Route::post('password/update', [UpdatePasswordController::class, 'update'])->name('password.update.custom');
 });

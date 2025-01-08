@@ -1,7 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MarkController;
@@ -23,24 +26,25 @@ use App\Http\Controllers\GradingSystemController;
 use App\Http\Controllers\SchoolSessionController;
 use App\Http\Controllers\AcademicSettingController;
 use App\Http\Controllers\AssignedTeacherController;
-use App\Http\Controllers\Auth\UpdatePasswordController;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
 
 Route::get('/', function () {
-    return view('welcome');
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
 });
 
-Auth::routes(['reset' => false]);
+Route::get('/dashboard', function () {
+    return Inertia::render('Dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
 
 Route::middleware(['auth'])->group(function () {
 
@@ -193,8 +197,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/create', [AssignmentController::class, 'create'])->name('assignment.create');
         Route::post('/create', [AssignmentController::class, 'store'])->name('assignment.store');
     });
-
-    // Update password route
-    Route::get('password/edit', [UpdatePasswordController::class, 'edit'])->name('password.edit');
-    Route::post('password/update', [UpdatePasswordController::class, 'update'])->name('password.update.custom');
 });
+
+require __DIR__.'/auth.php';

@@ -54,4 +54,23 @@ class AcademicYear extends Model
     {
         return $this->belongsToMany(StudentRecord::class)->as('studentAcademicYearBasedRecords')->using(AcademicYearStudentRecord::class)->withPivot('my_class_id', 'section_id');
     }
+
+    public function scopeCurrent($query)
+    {
+        return $query->where('is_current', true);
+    }
+
+    public function setCurrent()
+    {
+        // First remove current status from all academic years in this school
+        self::where('school_id', $this->school_id)
+            ->where('id', '!=', $this->id)
+            ->update(['is_current' => false]);
+        
+        // Set this as current
+        $this->is_current = true;
+        $this->save();
+        
+        return $this;
+    }
 }

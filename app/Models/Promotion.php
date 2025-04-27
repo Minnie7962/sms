@@ -15,6 +15,7 @@ class Promotion extends Model
         'new_class_id',
         'old_section_id',
         'new_section_id',
+        'academic_year_id',
         'students',
         'school_id',
     ];
@@ -25,7 +26,7 @@ class Promotion extends Model
 
     public function getLabelAttribute()
     {
-        return "{$this->oldClass->name} - {$this->oldSection->name} to {$this->newClass->name} - {$this->newSection->name}";
+        return "{$this->oldClass->name} - {$this->oldSection->name} to {$this->newClass->name} - {$this->newSection->name} year: {$this->academicYear->start_year} - {$this->academicYear->stop_year}";
     }
 
     public function oldClass(): BelongsTo
@@ -48,8 +49,42 @@ class Promotion extends Model
         return $this->belongsTo(Section::class, 'new_section_id');
     }
 
-    public function school()
+    public function academicYear(): BelongsTo
     {
-        return $this->belongsTo(School::class, 'school_id');
+        return $this->belongsTo(AcademicYear::class, 'academic_year_id');
+    }
+
+    public function promoteStudents()
+    {
+        if (empty($this->students)) {
+            return false;
+        }
+
+        $academicYear = AcademicYear::find($this->academic_year_id);
+        $newAcademicYear = $academicYear; // Default to same year unless specified differently
+
+        foreach ($this->students as $studentId) {
+            $studentRecord = StudentRecord::find($studentId);
+            
+            if (!$studentRecord) {
+                continue;
+            }
+            
+            // Update student's class and section for the current record
+            $studentRecord->my_class_id = $this->new_class_id;
+            $studentRecord->section_id = $this->new_section_id;
+            $studentRecord->save();
+            
+            // Create or update academic year record for this student
+            $academicYearRecord = AcademicYearStudentRecord::updateOrCreate([
+                'academic_year_id' => $newAcademicYear->id,
+                'student_record_id' => $studentRecord->id,
+            ], [
+                'my_class_id' => $this->new_class_id,
+                'section_id' => $this->new_section_id,
+            ]);
+        }
+        
+        return true;
     }
 }

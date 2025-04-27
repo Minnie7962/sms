@@ -43,4 +43,40 @@ class ExamRecord extends Model
     {
         return $query->where('section_id', $section_id);
     }
+
+    // In ExamRecord.php
+    public static function addOrUpdateBatch($examId, $sectionId, $students, $marks)
+    {
+        $exam = Exam::findOrFail($examId);
+        $examSlot = $exam->examSlots()->first(); // Assuming single exam slot for simplified grading
+
+        if (!$examSlot) {
+            // Create a default exam slot if none exists
+            $examSlot = ExamSlot::create([
+                'name' => 'Default',
+                'description' => 'Default exam slot',
+                'total_marks' => 100,
+                'exam_id' => $exam->id
+            ]);
+        }
+
+        $records = [];
+
+        foreach ($students as $index => $studentId) {
+            $record = self::updateOrCreate(
+                [
+                    'user_id' => $studentId,
+                    'section_id' => $sectionId,
+                    'exam_slot_id' => $examSlot->id,
+                ],
+                [
+                    'student_marks' => $marks[$index] ?? 0,
+                ]
+            );
+
+            $records[] = $record;
+        }
+
+        return $records;
+    }
 }

@@ -17,7 +17,6 @@ class AcademicYearSeeder extends Seeder
     {
         $school = School::first();
 
-        // Seed academic years from 2005 to current year (2025)
         $startYear = 2005;
         $currentYear = 2025;
         
@@ -25,9 +24,10 @@ class AcademicYearSeeder extends Seeder
         
         for ($year = $startYear; $year <= $currentYear; $year++) {
             $academicYear = AcademicYear::create([
-                'start_year' => $year,
-                'stop_year' => $year + 1,
-                'school_id' => $school->id,
+                'start_year'  => $year,
+                'stop_year'   => $year + 1,
+                'school_id'   => $school->id,
+                'is_current'  => ($year == $currentYear),
             ]);
             
             $latestAcademicYear = $academicYear;

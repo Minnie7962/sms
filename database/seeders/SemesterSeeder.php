@@ -3,17 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\AcademicYear;
-use App\Models\School;
 use App\Models\Semester;
+use App\Models\School;
 use Illuminate\Database\Seeder;
 
 class SemesterSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
     public function run()
     {
         $school = School::first();
@@ -21,17 +16,17 @@ class SemesterSeeder extends Seeder
 
         foreach (AcademicYear::all() as $academicYear) {
             $firstSemester = Semester::create([
-                'name' => 'First Semester',
+                'name'             => 'First Semester',
                 'academic_year_id' => $academicYear->id,
-                'school_id' => $school->id,
-                'check_result' => $academicYear->id !== $currentAcademicYear->id,
+                'school_id'        => $school->id,
+                'check_result'     => $academicYear->id !== $currentAcademicYear->id,
             ]);
 
             $secondSemester = Semester::create([
-                'name' => 'Second Semester',
+                'name'             => 'Second Semester',
                 'academic_year_id' => $academicYear->id,
-                'school_id' => $school->id,
-                'check_result' => $academicYear->id !== $currentAcademicYear->id,
+                'school_id'        => $school->id,
+                'check_result'     => $academicYear->id !== $currentAcademicYear->id,
             ]);
         }
 
